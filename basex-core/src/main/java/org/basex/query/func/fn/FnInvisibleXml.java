@@ -5,6 +5,7 @@ import static org.basex.query.value.type.SeqType.*;
 
 import java.io.*;
 import java.util.*;
+import java.util.List;
 
 import org.basex.io.*;
 import org.basex.query.*;
@@ -63,9 +64,10 @@ public final class FnInvisibleXml extends StandardFunc {
       final IxmlOptions opts = toOptions(arg(1), new IxmlOptions(), true, qc);
       final de.bottlecaps.markup.blitz.Parser parser;
       try {
-        parser = opts.get(IxmlOptions.FAIL_ON_ERROR)
-            ? Blitz.generate(grammar, Blitz.Option.FAIL_ON_ERROR)
-            : Blitz.generate(grammar);
+        List<Blitz.Option> options = new ArrayList<>();
+        if(opts.get(IxmlOptions.FAIL_ON_ERROR)) options.add(Blitz.Option.FAIL_ON_ERROR);
+        if(opts.get(IxmlOptions.LONGEST_MATCH)) options.add(Blitz.Option.LONGEST_MATCH);
+        parser = Blitz.generate(grammar, options.toArray(Blitz.Option[]::new));
       } catch(final BlitzParseException ex) {
         throw IXML_GRM_X_X_X.get(info, ex.getOffendingToken(), ex.getLine(), ex.getColumn());
       } catch(final BlitzException ex) {
@@ -128,6 +130,8 @@ public final class FnInvisibleXml extends StandardFunc {
   public static final class IxmlOptions extends Options {
     /** Invisible XML option fail-on-error. */
     public static final BooleanOption FAIL_ON_ERROR = new BooleanOption("fail-on-error", false);
+    /** Markup Blitz option longest-match. */
+    public static final BooleanOption LONGEST_MATCH = new BooleanOption("longest-match", false);
   }
 
 }

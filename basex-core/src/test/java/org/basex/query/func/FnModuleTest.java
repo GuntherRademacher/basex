@@ -1177,6 +1177,14 @@ public final class FnModuleTest extends SandboxTest {
     // empty $grammar
     query(func.args(" ()") + "(\"s: 'x'.\")",
         "<ixml><rule name=\"s\"><alt><literal string=\"x\"/></alt></rule></ixml>");
+    // longest match
+    query(func.args(
+        "e: f;\n"
+      + "   e, [\"+-*/\"], e.\n"
+      + "f: [\"0\"-\"9\"]+;\n"
+      + "   \"(\", e, \")\".", " map {'longest-match': true()}") + "('2*3+4+(5*6')",
+        "<e xmlns:ixml=\"http://invisiblexml.org/NS\" ixml:state=\"ambiguous\">"
+      + "<e><e><f>2</f></e>*<e><f>3</f></e></e>+<e><f>4</f></e></e>");
 
     // invalid grammar
     error(func.args("?%$"), IXML_GRM_X_X_X);
