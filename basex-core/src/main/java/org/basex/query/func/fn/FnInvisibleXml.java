@@ -67,6 +67,7 @@ public final class FnInvisibleXml extends StandardFunc {
         List<Blitz.Option> options = new ArrayList<>();
         if(opts.get(IxmlOptions.FAIL_ON_ERROR)) options.add(Blitz.Option.FAIL_ON_ERROR);
         if(opts.get(IxmlOptions.LONGEST_MATCH)) options.add(Blitz.Option.LONGEST_MATCH);
+        if(opts.get(IxmlOptions.SHORTEST_MATCH)) options.add(Blitz.Option.SHORTEST_MATCH);
         parser = Blitz.generate(grammar, options.toArray(Blitz.Option[]::new));
       } catch(final BlitzParseException ex) {
         throw IXML_GRM_X_X_X.get(info, ex.getOffendingToken(), ex.getLine(), ex.getColumn());
@@ -132,6 +133,8 @@ public final class FnInvisibleXml extends StandardFunc {
     public static final BooleanOption FAIL_ON_ERROR = new BooleanOption("fail-on-error", false);
     /** Markup Blitz option longest-match. */
     public static final BooleanOption LONGEST_MATCH = new BooleanOption("longest-match", false);
+    /** Markup Blitz option shortest-match. */
+    public static final BooleanOption SHORTEST_MATCH = new BooleanOption("shortest-match", false);
   }
 
 }

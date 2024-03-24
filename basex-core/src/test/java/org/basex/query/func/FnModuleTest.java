@@ -1137,6 +1137,13 @@ public final class FnModuleTest extends SandboxTest {
   /** Test method. */
   @Test public void invisibleXml() {
     final Function func = INVISIBLE_XML;
+
+    final String ambiguousExprGrammar =
+          "e: f;\n"
+        + "   e, [\"+-*/\"], e.\n"
+        + "f: [\"0\"-\"9\"]+;\n"
+        + "   \"(\", e, \")\".";
+
     // unambiguous grammar
     query(func.args(
           "e: t;\n"
@@ -1147,11 +1154,7 @@ public final class FnModuleTest extends SandboxTest {
         + "   \"(\", e, \")\".") + "('2*3+4')",
         "<e><t><t><f>2</f></t>*<f>3</f></t>+<e><t><f>4</f></t></e></e>");
     // ambiguous grammar
-    query(func.args(
-          "e: f;\n"
-        + "   e, [\"+-*/\"], e.\n"
-        + "f: [\"0\"-\"9\"]+;\n"
-        + "   \"(\", e, \")\".") + "('2*3+4')",
+    query(func.args(ambiguousExprGrammar) + "('2*3+4')",
           "<e xmlns:ixml=\"http://invisiblexml.org/NS\" ixml:state=\"ambiguous\">"
         + "<e><e><f>2</f></e>*<e><f>3</f></e></e>+<e><f>4</f></e></e>");
     // input with cr+lf
@@ -1178,13 +1181,12 @@ public final class FnModuleTest extends SandboxTest {
     query(func.args(" ()") + "(\"s: 'x'.\")",
         "<ixml><rule name=\"s\"><alt><literal string=\"x\"/></alt></rule></ixml>");
     // longest match
-    query(func.args(
-        "e: f;\n"
-      + "   e, [\"+-*/\"], e.\n"
-      + "f: [\"0\"-\"9\"]+;\n"
-      + "   \"(\", e, \")\".", " map {'longest-match': true()}") + "('2*3+4+(5*6')",
+    query(func.args(ambiguousExprGrammar, " map {'longest-match': true()}") + "('2*3+4+(5*6')",
         "<e xmlns:ixml=\"http://invisiblexml.org/NS\" ixml:state=\"ambiguous\">"
       + "<e><e><f>2</f></e>*<e><f>3</f></e></e>+<e><f>4</f></e></e>");
+    // shortest match
+    query(func.args(ambiguousExprGrammar, " map {'shortest-match': true()}") + "('2*3+4+(5*6')",
+      "<e><f>2</f></e>");
 
     // invalid grammar
     error(func.args("?%$"), IXML_GRM_X_X_X);
