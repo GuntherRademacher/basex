@@ -21,7 +21,6 @@ import org.basex.query.func.fetch.*;
 import org.basex.query.func.file.*;
 import org.basex.query.func.fn.*;
 import org.basex.query.func.ft.*;
-import org.basex.query.func.hash.*;
 import org.basex.query.func.hof.*;
 import org.basex.query.func.html.*;
 import org.basex.query.func.http.*;
@@ -122,6 +121,9 @@ public enum Function implements AFunction {
   /** XQuery function. */
   CODEPOINTS_TO_STRING(FnCodepointsToString::new, "codepoints-to-string(values)",
       params(INTEGER_ZM), STRING_O),
+  /** XQuery function. */
+  COLLATION(FnCollation::new, "collation(options)",
+      params(MAP_O), ANY_URI_O),
   /** XQuery function. */
   COLLATION_KEY(FnCollationKey::new, "collation-key(value[,collation])",
       params(STRING_O, STRING_ZO), BASE64_BINARY_O),
@@ -280,8 +282,8 @@ public enum Function implements AFunction {
   FORMAT_INTEGER(FnFormatInteger::new, "format-integer(value,picture[,language])",
       params(INTEGER_ZO, STRING_O, STRING_ZO), STRING_O),
   /** XQuery function. */
-  FORMAT_NUMBER(FnFormatNumber::new, "format-number(value,picture[,format-name,format])",
-      params(NUMERIC_ZO, STRING_O, STRING_ZO, MAP_ZO), STRING_O),
+  FORMAT_NUMBER(FnFormatNumber::new, "format-number(value,picture[,options])",
+      params(NUMERIC_ZO, STRING_O, ITEM_ZO), STRING_O),
   /** XQuery function. */
   FORMAT_TIME(FnFormatTime::new, "format-time(value,picture[,language,calendar,place])",
       params(TIME_ZO, STRING_O, STRING_ZO, STRING_ZO, STRING_ZO), STRING_ZO),
@@ -303,6 +305,9 @@ public enum Function implements AFunction {
   /** XQuery function. */
   HAS_CHILDREN(FnHasChildren::new, "has-children([node])",
       params(NODE_ZM), BOOLEAN_O),
+  /** XQuery function. */
+  HASH(FnHash::new, "hash(value[,options])",
+      params(ANY_ATOMIC_TYPE_ZO, MAP_ZO), HEX_BINARY_O),
   /** XQuery function. */
   HEAD(FnHead::new, "head(input)",
       params(ITEM_ZM), ITEM_ZO),
@@ -337,7 +342,7 @@ public enum Function implements AFunction {
   IN_SCOPE_PREFIXES(FnInScopePrefixes::new, "in-scope-prefixes(element)",
       params(ELEMENT_O), STRING_ZM),
   /** XQuery function. */
-  INDEX_OF(FnIndexOf::new, "index-of(input,search[,collation])",
+  INDEX_OF(FnIndexOf::new, "index-of(input,target[,collation])",
       params(ANY_ATOMIC_TYPE_ZM, ANY_ATOMIC_TYPE_O, STRING_ZO), INTEGER_ZM),
   /** XQuery function. */
   INDEX_WHERE(FnIndexWhere::new, "index-where(input,predicate)",
@@ -674,7 +679,7 @@ public enum Function implements AFunction {
   // Map Module
 
   /** XQuery function. */
-  _MAP_BUILD(MapBuild::new, "build(input[,key,value,combine])",
+  _MAP_BUILD(MapBuild::new, "build(input[,keys,value,combine])",
       params(ITEM_ZO, FuncType.get(ANY_ATOMIC_TYPE_ZO, ITEM_O).seqType(Occ.ZERO_OR_ONE),
       FuncType.get(ITEM_ZM, ITEM_O).seqType(Occ.ZERO_OR_ONE),
       FuncType.get(ITEM_ZM, ITEM_ZM, ITEM_ZM).seqType(Occ.ZERO_OR_ONE)),
@@ -785,7 +790,7 @@ public enum Function implements AFunction {
   _ARRAY_HEAD(ArrayHead::new, "head(array)",
       params(ARRAY_O), ITEM_ZM, ARRAY_URI),
   /** XQuery function. */
-  _ARRAY_INDEX_OF(ArrayIndexOf::new, "index-of(array,search[,collation])",
+  _ARRAY_INDEX_OF(ArrayIndexOf::new, "index-of(array,target[,collation])",
       params(ARRAY_O, ANY_ATOMIC_TYPE_ZM, STRING_ZO), INTEGER_ZM, ARRAY_URI),
   /** XQuery function. */
   _ARRAY_INDEX_WHERE(ArrayIndexWhere::new, "index-where(array,predicate)",
@@ -800,7 +805,7 @@ public enum Function implements AFunction {
   _ARRAY_MEMBERS(ArrayMembers::new, "members(array)",
       params(ARRAY_O), MAP_ZM, ARRAY_URI),
   /** XQuery function. */
-  _ARRAY_OF_MEMBERS(ArrayOfMembers::new, "of-members(members)",
+  _ARRAY_OF_MEMBERS(ArrayOfMembers::new, "of-members(input)",
       params(MAP_ZM), ARRAY_O, ARRAY_URI),
   /** XQuery function. */
   _ARRAY_PUT(ArrayPut::new, "put(array,position,member)",
@@ -1435,21 +1440,6 @@ public enum Function implements AFunction {
   /** XQuery function. */
   _FT_TOKENS(FtTokens::new, "tokens(database[,prefix])",
       params(STRING_O, STRING_O), ELEMENT_ZM, flag(NDT), FT_URI),
-
-  // Hash Module
-
-  /** XQuery function. */
-  _HASH_HASH(HashHash::new, "hash(value,algorithm)",
-      params(ANY_ATOMIC_TYPE_O, STRING_O), BASE64_BINARY_O, HASH_URI),
-  /** XQuery function. */
-  _HASH_MD5(HashMd5::new, "md5(value)",
-      params(ANY_ATOMIC_TYPE_O), BASE64_BINARY_O, HASH_URI),
-  /** XQuery function. */
-  _HASH_SHA1(HashSha1::new, "sha1(value)",
-      params(ANY_ATOMIC_TYPE_O), BASE64_BINARY_O, HASH_URI),
-  /** XQuery function. */
-  _HASH_SHA256(HashSha256::new, "sha256(value)",
-      params(ANY_ATOMIC_TYPE_O), BASE64_BINARY_O, HASH_URI),
 
   // HOF Module
 

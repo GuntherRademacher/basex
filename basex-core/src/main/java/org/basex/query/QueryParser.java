@@ -1781,7 +1781,7 @@ public class QueryParser extends InputParser {
         } else {
           arg = expr;
         }
-        final FuncBuilder fb = argumentList(name != null, new Expr[] { arg });
+        final FuncBuilder fb = argumentList(name != null, arg);
         expr = name != null ? Functions.get(name, fb, qc) : Functions.dynamic(ex, fb);
         if(mapping) {
           expr = new GFLWOR(ii, fr, expr);
@@ -2226,7 +2226,7 @@ public class QueryParser extends InputParser {
     // ordered expression
     if(wsConsumeWs(ORDERED, null, "{") || wsConsumeWs(UNORDERED, null, "{")) return enclosedExpr();
     // map constructor
-    if(wsConsumeWs(MAP, MAPCONSTR, "{")) return new CMap(info(), keyValues());
+    if(current('{') || wsConsumeWs(MAP, MAPCONSTR, "{")) return new CMap(info(), keyValues());
     // curly array constructor
     if(wsConsumeWs(ARRAY, ARRAYCONSTR, "{")) {
       wsCheck("{");
@@ -2237,7 +2237,7 @@ public class QueryParser extends InputParser {
     // square array constructor
     if(wsConsume("[")) return new CArray(info(), true, values());
     // unary lookup
-    int p = pos;
+    final int p = pos;
     if(consume("?")) {
       if(!wsConsume(",") && !consume(")")) {
         final InputInfo ii = info();
@@ -2547,7 +2547,8 @@ public class QueryParser extends InputParser {
     final InputInfo ii = info();
     final QNm name = varName();
     final SeqType st = type != null ? type : optAsType();
-    return new Var(name, st, qc, ii);
+    final boolean coerce = type == null && st != null;
+    return new Var(name, st, qc, ii, coerce);
   }
 
   /**
@@ -2591,38 +2592,33 @@ public class QueryParser extends InputParser {
   /**
    * Parses the "ArgumentList" rule.
    * @param keywords allow keyword arguments
-   * @param args arguments (can be {@code null})
+   * @param expr first argument (can be {@code null})
    * @return function arguments
    * @throws QueryException query exception
    */
-  private FuncBuilder argumentList(final boolean keywords, final Expr[] args)
+  private FuncBuilder argumentList(final boolean keywords, final Expr expr)
       throws QueryException {
-    final FuncBuilder fb  = new FuncBuilder(info()).init(args, null);
+    final FuncBuilder fb  = new FuncBuilder(info());
+    if(expr != null) fb.add(expr, null);
     wsCheck("(");
     if(!wsConsumeWs(")")) {
       boolean kw = false;
       do {
         final int p = pos;
+        QNm name = null;
         if(keywords) {
-          final QNm name = eQName(null, null);
-          if(name != null && wsConsume(":=")) {
-            final Expr expr = single();
-            if(expr == null) throw error(FUNCARG_X, found());
-            if(fb.add(name, expr)) throw error(KEYWORDTWICE_X, name);
+          final QNm qnm = eQName(null, null);
+          if(wsConsume(":=")) {
+            name = qnm;
             kw = true;
           } else {
             pos = p;
           }
         }
-        if(p == pos && !kw) {
+        if(!kw || name != null) {
           final Expr arg = single();
-          if(arg != null) {
-            fb.add(arg);
-          } else if(wsConsume("?")) {
-            fb.add(null);
-          } else {
-            throw error(FUNCARG_X, found());
-          }
+          if(arg == null && !wsConsume("?")) throw error(FUNCARG_X, found());
+          if(fb.add(arg != null ? arg : Empty.UNDEFINED, name)) throw error(KEYWORDTWICE_X, name);
         }
       } while(wsConsumeWs(","));
       if(!consume(")")) throw error(FUNCARG_X, found());
@@ -3084,9 +3080,13 @@ public class QueryParser extends InputParser {
     skipWs();
     final QNm name = eQName(sc.elemNS, TYPEINVALID);
     Type type = ListType.find(name);
+    EnumValues values = null;
     if(type == null) {
       type = AtomType.find(name, false);
-      if(consume("(")) throw error(SIMPLETYPE_X, name.prefixId(XML));
+      if(consume("(")) {
+        if(type != AtomType.ENUM) throw error(SIMPLETYPE_X, name.prefixId(XML));
+        values = enumerationType();
+      }
       if(type == null ? name.eq(AtomType.ANY_SIMPLE_TYPE.qname()) :
         type.oneOf(AtomType.ANY_ATOMIC_TYPE, AtomType.NOTATION))
         throw error(INVALIDCAST_X, name.prefixId(XML));
@@ -3094,7 +3094,7 @@ public class QueryParser extends InputParser {
         throw error(WHICHCAST_X, AtomType.similar(name));
     }
     skipWs();
-    return SeqType.get(type, consume('?') ? Occ.ZERO_OR_ONE : Occ.EXACTLY_ONE);
+    return SeqType.get(type, consume('?') ? Occ.ZERO_OR_ONE : Occ.EXACTLY_ONE, values);
   }
 
   /**
@@ -3156,6 +3156,10 @@ public class QueryParser extends InputParser {
         // item type
         type = AtomType.ITEM;
         wsCheck(")");
+      } else if(name.eq(AtomType.ENUM.qname())) {
+        // enum type
+        type = AtomType.ENUM;
+        st = SeqType.get(type, Occ.EXACTLY_ONE, enumerationType());
       }
       // no type found
       if(type == null) throw error(WHICHTYPE_X, FuncType.similar(name));
@@ -3304,6 +3308,20 @@ public class QueryParser extends InputParser {
       return null;
     }
     return Test.get(NodeType.PROCESSING_INSTRUCTION, new QNm(name), null);
+  }
+
+  /**
+   * Parses the "EnumerationType" rule without the leading keyword and the opening bracket.
+   * @return enum values
+   * @throws QueryException query exception
+   */
+  private EnumValues enumerationType() throws QueryException {
+    final TokenSet values = new TokenSet();
+    do {
+      values.add(stringLiteral());
+    } while(wsConsume(","));
+    check(')');
+    return new EnumValues(values);
   }
 
   /**

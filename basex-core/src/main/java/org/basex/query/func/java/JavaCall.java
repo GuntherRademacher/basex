@@ -6,7 +6,6 @@ import static org.basex.util.Token.*;
 
 import java.lang.reflect.*;
 import java.lang.reflect.Array;
-import java.net.*;
 import java.util.*;
 
 import javax.xml.datatype.*;
@@ -339,7 +338,7 @@ public abstract class JavaCall extends Arr {
       final InputInfo info) throws QueryException {
 
     // rewrite function name, extract argument types
-    String name = camelCase(string(qname.local()));
+    String name = Strings.camelCase(string(qname.local()));
     String[] types = null;
     final int n = name.indexOf('\u00b7');
     if(n != -1) {
@@ -355,7 +354,7 @@ public abstract class JavaCall extends Arr {
     // check if URI starts with "java:" prefix. if yes, skip rewritings
     final boolean enforce = uri.startsWith(JAVA_PREFIX_COLON);
     final String className = classPath(enforce ? uri.substring(JAVA_PREFIX_COLON.length()) :
-      uriToClasspath(uri2path(uri)));
+      Strings.uriToClasspath(Strings.uri2path(uri)));
 
     // function in imported Java module
     final ModuleLoader modules = qc.resources.modules();
@@ -434,7 +433,7 @@ public abstract class JavaCall extends Arr {
     if(cs == 0) {
       final TokenList names = new TokenList();
       for(final String method : allMethods.keySet()) names.add(method);
-      throw noMember(name, types, arity, string(qname.string()), arities, names.finish(), info);
+      throw noMember(name, types, arity, arities, names.finish(), info, string(qname.string()));
     }
     if(cs > 1) throw JAVAMULTIPLE_X_X.get(info, qname.string(),
         paramTypes(candidates.toArray(Executable[]::new), false));
@@ -447,20 +446,20 @@ public abstract class JavaCall extends Arr {
   }
 
   /**
-   * Returns an error message if no fields and methods could be chosen for execution.
+   * Returns an error message (no field or method could be chosen for execution).
    * @param name name of field or method
    * @param types types (can be {@code null})
    * @param arity supplied arity
-   * @param full full name of field or method
    * @param arities arities of found methods
    * @param names list of available names
    * @param info input info (can be {@code null})
+   * @param member name of field or method (for error messages)
    * @return exception
    */
   static QueryException noMember(final String name, final String[] types, final int arity,
-      final String full, final IntList arities, final byte[][] names, final InputInfo info) {
+      final IntList arities, final byte[][] names, final InputInfo info, final String member) {
     // functions with different arities
-    if(!arities.isEmpty()) return Functions.wrongArity(arity, arities, full, false, info);
+    if(!arities.isEmpty()) return Functions.wrongArity(arity, arities, false, info, member);
 
     // find similar field/method names
     final byte[] nm = token(name);
@@ -469,9 +468,9 @@ public abstract class JavaCall extends Arr {
       // if name is equal, no function was chosen via exact type matching
       final StringJoiner sj = new StringJoiner(", ", "(", ")");
       for(final String type : types) sj.add(className(type));
-      return JAVAARGS_X_X.get(info, full, sj);
+      return JAVAARGS_X_X.get(info, member, sj);
     }
-    return JAVAMEMBER_X.get(info, similar(full, similar));
+    return JAVAMEMBER_X.get(info, similar(member, similar));
   }
 
   /**
@@ -527,79 +526,6 @@ public abstract class JavaCall extends Arr {
   }
 
   /**
-   * Converts the given string to a Java class name. Slashes will be replaced with dots, and
-   * the last package segment will be capitalized and camel-cased.
-   * @param string string to convert
-   * @return class name
-   */
-  public static String uriToClasspath(final String string) {
-    final String s = string.replace('/', '.');
-    final int c = s.lastIndexOf('.') + 1;
-    return s.substring(0, c) + Strings.capitalize(camelCase(s.substring(c)));
-  }
-
-  /**
-   * Converts the given string to camel case.
-   * @param string string to convert
-   * @return resulting string
-   */
-  public static String camelCase(final String string) {
-    final StringBuilder sb = new StringBuilder();
-    boolean upper = false;
-    final int sl = string.length();
-    for(int s = 0; s < sl; s++) {
-      final char ch = string.charAt(s);
-      if(ch == '-') {
-        upper = true;
-      } else if(upper) {
-        sb.append(Character.toUpperCase(ch));
-        upper = false;
-      } else {
-        sb.append(ch);
-      }
-    }
-    return sb.toString();
-  }
-
-  /**
-   * Converts a URI to a directory path.
-   * See https://docs.basex.org/wiki/Repository#URI_Rewriting for details.
-   * @param uri namespace uri
-   * @return converted path
-   */
-  public static String uri2path(final String uri) {
-    String path = uri;
-    try {
-      final URI u = new URI(uri);
-      final TokenBuilder tb = new TokenBuilder();
-      if(u.isOpaque()) {
-        tb.add(u.getScheme()).add('/').add(u.getSchemeSpecificPart().replace(':', '/'));
-      } else {
-        final String auth = u.getAuthority();
-        if(auth != null) {
-          // reverse authority, replace dots by slashes. example: basex.org  ->  org/basex
-          final String[] comp = Strings.split(auth, '.');
-          for(int c = comp.length - 1; c >= 0; c--) tb.add('/').add(comp[c]);
-        }
-        // add remaining path
-        final String p = u.getPath();
-        tb.add(p == null || p.isEmpty() ? "/" : p.replace('.', '/'));
-      }
-      path = tb.toString();
-    } catch(final URISyntaxException ex) {
-      Util.debug(ex);
-    }
-
-    // replace special characters with dashes; remove multiple slashes
-    path = path.replaceAll("[^\\w.-/]+", "-").replaceAll("//+", "/");
-    // add "index" string
-    if(Strings.endsWith(path, '/')) path += "index";
-    // remove heading slash
-    if(Strings.startsWith(path, '/')) path = path.substring(1);
-    return path;
-  }
-
-  /**
    * Returns a fully qualified class name.
    * @param name class string
    * @return normalized name
@@ -626,8 +552,7 @@ public abstract class JavaCall extends Arr {
    * @return normalized name
    */
   static String className(final String name) {
-    return name.startsWith(QueryText.JAVA_LANG_DOT) ?
-      name.substring(QueryText.JAVA_LANG_DOT.length()) : name;
+    return name.startsWith(JAVA_LANG_DOT) ? name.substring(JAVA_LANG_DOT.length()) : name;
   }
 
   /**

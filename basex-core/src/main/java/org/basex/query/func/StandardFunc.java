@@ -553,7 +553,7 @@ public abstract class StandardFunc extends Arr {
   }
 
   /**
-   * Evaluates an expression to user options.
+   * Evaluates an expression to a map with string keys and values.
    * @param expr expression (can be empty)
    * @param qc query context
    * @return user options
@@ -561,22 +561,21 @@ public abstract class StandardFunc extends Arr {
    */
   protected final HashMap<String, String> toOptions(final Expr expr, final QueryContext qc)
       throws QueryException {
-    return toOptions(expr, new Options(), false, qc).free();
+    return new FuncOptions(info).assign(expr.item(qc, info), new Options()).free();
   }
 
   /**
-   * Evaluates an expression, if it exists, and returns options.
+   * Evaluates an expression and returns options.
    * @param <E> options type
    * @param expr expression (can be empty)
    * @param options options template
-   * @param enforce raise error if a supplied option is unknown
    * @param qc query context
    * @return options
    * @throws QueryException query exception
    */
   protected final <E extends Options> E toOptions(final Expr expr, final E options,
-      final boolean enforce, final QueryContext qc) throws QueryException {
-    return new FuncOptions(info).assign(expr.item(qc, info), options, enforce);
+      final QueryContext qc) throws QueryException {
+    return new FuncOptions(info).assign(expr.item(qc, info), options);
   }
 
   /**
@@ -689,7 +688,7 @@ public abstract class StandardFunc extends Arr {
    */
   protected final boolean toBoolean(final QueryContext qc, final FItem predicate,
       final Value... args) throws QueryException {
-    return toBoolean(predicate.invoke(qc, info, args).item(qc, info));
+    return toBoolean(predicate.invoke(qc, info, args).atomItem(qc, info));
   }
 
   /**

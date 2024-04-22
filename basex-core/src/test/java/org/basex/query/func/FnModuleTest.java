@@ -12,9 +12,9 @@ import org.basex.query.expr.List;
 import org.basex.query.expr.constr.*;
 import org.basex.query.expr.gflwor.*;
 import org.basex.query.expr.path.*;
-import org.basex.query.util.format.*;
 import org.basex.query.value.item.*;
 import org.basex.query.value.seq.*;
+import org.basex.util.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.Test;
 
@@ -844,7 +844,7 @@ public final class FnModuleTest extends SandboxTest {
     query(func.args(" xs:date('2024-01-12Z')", "[Y0001]-[M01]-[D01][Z]", " ()", " ()",
         "America/New_York"), "2024-01-11-05:00");
 
-    if(IcuFormatter.available()) {
+    if(Prop.ICU) {
       query(func.args(" xs:date('2023-12-11')", "[FNn], [MNn] [D], [Y]", "cy"),
           "Dydd Llun, Rhagfyr 11, 2023");
       query(func.args(" xs:date('2023-09-01')", "[MNn]", "es"), "septiembre");
@@ -873,7 +873,7 @@ public final class FnModuleTest extends SandboxTest {
 
     query(func.args(1, "Ww", "de"), "Eins");
     query(func.args(1, "Ww;o", "de"), "Erste");
-    if(IcuFormatter.available()) {
+    if(Prop.ICU) {
       query(func.args(1, "Ww;c", "de"), "Ein");
       query(func.args(1, "Ww;o(%spellout-cardinal-feminine-financial)", "bs"), "Jedinica");
       query(func.args(1, "Ww;c(%spellout-ordinal-neuter)", "es"), "Primera");
@@ -892,12 +892,17 @@ public final class FnModuleTest extends SandboxTest {
     final Function func = FORMAT_NUMBER;
 
     query(func.args(" 12345.67", "#.##0,00", "de"), "12.345,67");
-    query(func.args(" 12345.67", "#.##0,00", " ()", " map { 'decimal-separator': ',', "
+    query(func.args(" 12345.67", "#.##0,00", " { 'decimal-separator': ',', "
         + "'grouping-separator': '.' }"), "12.345,67");
     query(func.args(" 12345.67", "#\u2019##0.00", "de-CH"), "12\u2019345.67");
+    query(func.args(" 12345.67", "#.##0,00", " { "
+        + "'decimal-separator': ',', 'grouping-separator': '.' }"), "12.345,67");
+    query(func.args(" 12345.67", "#.##0,00", " { 'format-name': 'de' }"), "12.345,67");
+    query(func.args(" 12345.67", "#.##0,00", " { 'format-name': 'de', "
+        + "'decimal-separator': ',', 'grouping-separator': '.' }"), "12.345,67");
+    query(func.args(" 12345.67", "#.##0,00", " { 'format-name': 'en', "
+        + "'decimal-separator': ',', 'grouping-separator': '.' }"), "12.345,67");
 
-    //error(func.args(" 12345.67", "#.##0,00", "de", " map { 'decimal-separator': ',', "
-    //    + "'grouping-separator': '.' }"), FORMDUP_X);
     error(func.args(" 12345.67", "#.##0,00", "de-XX"), FORMATWHICH_X);
   }
 
@@ -905,7 +910,7 @@ public final class FnModuleTest extends SandboxTest {
   @Test public void functionAnnotations() {
     final Function func = FUNCTION_ANNOTATIONS;
     // queries
-    query(func.args(" true#0"), "map{}");
+    query(func.args(" true#0"), "{}");
     query(func.args(" %local:x function() { }") +
         "=> " + _MAP_CONTAINS.args(" xs:QName('local:x')"), true);
     query(func.args(" %Q{uri}name('a', 'b') function() {}") +

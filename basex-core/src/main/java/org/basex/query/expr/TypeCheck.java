@@ -23,7 +23,7 @@ import org.basex.util.hash.*;
  * @author Leo Woerteler
  */
 public class TypeCheck extends Single {
-  /** Flag for function coercion. */
+  /** Coercion flag. */
   public final boolean coerce;
   /** Only check occurrence indicator. */
   private boolean occ;
@@ -33,7 +33,7 @@ public class TypeCheck extends Single {
    * @param info input info (can be {@code null})
    * @param expr expression to be promoted
    * @param seqType target type
-   * @param coerce flag for function coercion
+   * @param coerce coercion flag
    */
   public TypeCheck(final InputInfo info, final Expr expr, final SeqType seqType,
       final boolean coerce) {
@@ -60,7 +60,7 @@ public class TypeCheck extends Single {
     }
 
     final SeqType et = expr.seqType();
-    occ = et.type.instanceOf(type) && et.kindInstanceOf(st);
+    occ = et.type.instanceOf(type) && et.kindInstanceOf(st) && et.valuesInstanceOf(st);
 
     // remove redundant type check
     if(expr instanceof TypeCheck) {
@@ -170,8 +170,8 @@ public class TypeCheck extends Single {
     }
 
     // check occurrence indicator and item type
-    if(st.instance(value)) return value;
     if(coerce) return st.coerce(value, null, qc, null, info);
+    if(st.instance(value)) return value;
     throw error(value, st);
   }
 

@@ -125,9 +125,9 @@ public final class QT3TS extends Main {
 
     final XdmValue doc = new XQuery("doc('" + file(false, CATALOG) + "')", ctx).value();
     final String version = asString("*:catalog/@version", doc);
-    Util.outln(NL + "QT Test Suite " + version);
-    Util.outln("Test directory: " + file(false, "."));
-    Util.out("Parsing queries");
+    Util.println(NL + "QT Test Suite " + version);
+    Util.println("Test directory: " + file(false, "."));
+    Util.print("Parsing queries");
 
     for(final XdmItem ienv : new XQuery("*:catalog/*:environment", ctx).context(doc))
       genvs.add(new QT3Env(ctx, ienv));
@@ -143,7 +143,7 @@ public final class QT3TS extends Main {
     result.append(" Ignored : ").append(ignored).append(NL);
 
     // save log data
-    Util.outln(NL + "Writing log file...");
+    Util.println(NL + "Writing log file...");
     try(PrintOutput po = new PrintOutput(new IOFile("tests.log"))) {
       po.println("QT3TS RESULTS __________________________" + NL);
       po.println(result.toString());
@@ -164,16 +164,16 @@ public final class QT3TS extends Main {
       sopts.set(SerializerOptions.OMIT_XML_DECLARATION, YesNo.YES);
       final String file = "ReportingResults/results_" + NAME + '_' + VERSION + IO.XMLSUFFIX;
       new IOFile(file).write(report.create(ctx));
-      Util.outln("Creating report '" + file + "'...");
+      Util.println("Creating report '" + file + "'...");
     }
 
-    Util.out(NL + result);
-    Util.outln(" Time    : " + perf);
+    Util.print(NL + result);
+    Util.println(" Time    : " + perf);
 
     if(slow != null && !slow.isEmpty()) {
-      Util.outln(NL + "Slow queries:");
+      Util.println(NL + "Slow queries:");
       for(final Entry<Long, String> l : slow.entrySet()) {
-        Util.outln("- " + -(l.getKey() / 1000000) + " ms: " + l.getValue());
+        Util.println("- " + -(l.getKey() / 1000000) + " ms: " + l.getValue());
       }
     }
 
@@ -219,7 +219,7 @@ public final class QT3TS extends Main {
    * @throws Exception exception
    */
   private void testCase(final XdmItem test, final ArrayList<QT3Env> envs) throws Exception {
-    if(total++ % 500 == 0) Util.out(".");
+    if(total++ % 500 == 0) Util.print(".");
 
     if(!supported(test)) {
       if(ignoring) ignore.add(asString("@name", test)).add(NL);
@@ -273,7 +273,7 @@ public final class QT3TS extends Main {
       string = string(new IOFile(baseDir, qfile).read());
     }
 
-    if(verbose) Util.outln(name);
+    if(verbose) Util.println(name);
 
     // bind variables
     if(env != null) {
@@ -535,8 +535,7 @@ public final class QT3TS extends Main {
       }
       return msg;
     } catch(final Exception ex) {
-      Util.stack(ex);
-      return "Exception: " + ex.getMessage();
+      return "Flawed test case: " + Util.message(ex);
     }
   }
 
@@ -619,8 +618,8 @@ public final class QT3TS extends Main {
     final String exp = expected.getString();
     try {
       final String query = "declare variable $result external; " + exp;
-      return environment(new XQuery(query, ctx), result.env).variable("$result", result.value).
-          value().getBoolean() ? null : exp;
+      return environment(new XQuery(query, ctx), result.env).context(result.value).variable(
+          "$result", result.value).value().getBoolean() ? null : exp;
     } catch(final XQueryException ex) {
       // should not occur
       return ex.getException().getMessage();
