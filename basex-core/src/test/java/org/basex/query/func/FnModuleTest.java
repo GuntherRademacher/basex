@@ -1166,7 +1166,7 @@ public final class FnModuleTest extends SandboxTest {
     query("string-to-codepoints("
         + func.args("s: ~[]*.")
         + "(codepoints-to-string((9,13,10,9,10,13,9,10,9,13,9))))",
-        "9\n13\n10\n9\n10\n13\n9\n10\n9\n13\n9");
+        "9\n10\n9\n10\n10\n9\n10\n9\n10\n9");
     // invalid input
     query("let $parser := " + func.args("s: ~[\"x\"]*.") + "\n"
         + "return $parser('x')",
@@ -1186,12 +1186,21 @@ public final class FnModuleTest extends SandboxTest {
     query(func.args(" ()") + "(\"s: 'x'.\")",
         "<ixml><rule name=\"s\"><alt><literal string=\"x\"/></alt></rule></ixml>");
     // longest match
-    query(func.args(ambiguousExprGrammar, " map {'longest-match': true()}") + "('2*3+4+(5*6')",
-        "<e xmlns:ixml=\"http://invisiblexml.org/NS\" ixml:state=\"ambiguous\">"
-      + "<e><e><f>2</f></e>*<e><f>3</f></e></e>+<e><f>4</f></e></e>");
+    query(func.args(ambiguousExprGrammar, " map {'trailing-content-policy': 'longest-match'}")
+        + "('2*3+4+(5*6')",
+        "<e xmlns:ixml=\"http://invisiblexml.org/NS\" "
+        + "xmlns:blitz=\"http://de.bottlecaps/markup/blitz/NS\" ixml:state=\"ambiguous prefix\" "
+        + "blitz:length=\"5\"><e><e><f>2</f></e>*<e><f>3</f></e></e>+<e><f>4</f></e></e>");
     // shortest match
-    query(func.args(ambiguousExprGrammar, " map {'shortest-match': true()}") + "('2*3+4+(5*6')",
-      "<e><f>2</f></e>");
+    query(func.args(ambiguousExprGrammar, " map {'trailing-content-policy': 'shortest-match'}")
+        + "('2*3+4+(5*6')",
+        "<e xmlns:ixml=\"http://invisiblexml.org/NS\" "
+        + "xmlns:blitz=\"http://de.bottlecaps/markup/blitz/NS\" ixml:state=\"prefix\" "
+        + "blitz:length=\"1\"><f>2</f></e>");
+    // first match
+    query(func.args(ambiguousExprGrammar, " map {'leading-content-policy': 'first-match'}")
+        + "('3+4)*2')",
+        "<e xmlns:blitz=\"http://de.bottlecaps/markup/blitz/NS\" blitz:offset=\"5\"><f>2</f></e>");
 
     // invalid grammar
     error(func.args("?%$"), IXML_GRM_X_X_X);

@@ -5,7 +5,6 @@ import static org.basex.query.value.type.SeqType.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.List;
 
 import org.basex.io.*;
 import org.basex.query.*;
@@ -21,6 +20,7 @@ import org.basex.util.hash.*;
 import org.basex.util.options.*;
 
 import de.bottlecaps.markup.*;
+import de.bottlecaps.markup.blitz.Option;
 
 /**
  * Function implementation.
@@ -36,7 +36,8 @@ public final class FnInvisibleXml extends StandardFunc {
   public FuncItem item(final QueryContext qc, final InputInfo ii) throws QueryException {
     if(generator == null) {
       for(final String className : Arrays.asList("de.bottlecaps.markup.Blitz",
-          "de.bottlecaps.markup.BlitzException", "de.bottlecaps.markup.BlitzParseException")) {
+          "de.bottlecaps.markup.BlitzException", "de.bottlecaps.markup.BlitzParseException",
+          "de.bottlecaps.markup.blitz.Option")) {
         if(!Reflect.available(className)) {
           throw BASEX_CLASSPATH_X_X.get(info, definition.local(), className);
         }
@@ -64,11 +65,9 @@ public final class FnInvisibleXml extends StandardFunc {
       final IxmlOptions opts = toOptions(arg(1), new IxmlOptions(), qc);
       final de.bottlecaps.markup.blitz.Parser parser;
       try {
-        List<Blitz.Option> options = new ArrayList<>();
-        if(opts.get(IxmlOptions.FAIL_ON_ERROR)) options.add(Blitz.Option.FAIL_ON_ERROR);
-        if(opts.get(IxmlOptions.LONGEST_MATCH)) options.add(Blitz.Option.LONGEST_MATCH);
-        if(opts.get(IxmlOptions.SHORTEST_MATCH)) options.add(Blitz.Option.SHORTEST_MATCH);
-        parser = Blitz.generate(grammar, options.toArray(Blitz.Option[]::new));
+        Map<String, String> options = new HashMap<>();
+        opts.forEach(o -> options.put(o.name(), opts.get(o).toString()));
+        parser = Blitz.generate(grammar, Option.optionMap(options));
       } catch(final BlitzParseException ex) {
         throw IXML_GRM_X_X_X.get(info, ex.getOffendingToken(), ex.getLine(), ex.getColumn());
       } catch(final BlitzException ex) {
@@ -131,10 +130,35 @@ public final class FnInvisibleXml extends StandardFunc {
   public static final class IxmlOptions extends Options {
     /** Invisible XML option fail-on-error. */
     public static final BooleanOption FAIL_ON_ERROR = new BooleanOption("fail-on-error", false);
-    /** Markup Blitz option longest-match. */
-    public static final BooleanOption LONGEST_MATCH = new BooleanOption("longest-match", false);
-    /** Markup Blitz option shortest-match. */
-    public static final BooleanOption SHORTEST_MATCH = new BooleanOption("shortest-match", false);
+    /** Markup Blitz option leading-content-policy. */
+    public static final EnumOption<LeadingContentPolicy> LEADING_CONTENT_POLICY =
+        new EnumOption<>("leading-content-policy", LeadingContentPolicy.COMPLETE_MATCH);
+    /** Markup Blitz option trailing.content-policy. */
+    public static final EnumOption<TrailingContentPolicy> TRAILING_CONTENT_POLICY =
+        new EnumOption<>("trailing-content-policy", TrailingContentPolicy.COMPLETE_MATCH);
+
+    /** Values of option leading-content-policy. */
+    private enum LeadingContentPolicy {
+      /** Disallow leading unmatched content.              */ COMPLETE_MATCH,
+      /** Skip unmatched content, then accept first match. */ FIRST_MATCH;
+
+      @Override
+      public String toString() {
+        return EnumOption.string(name());
+      }
+    }
+
+    /** Values of option trailing-content-policy. */
+    private enum TrailingContentPolicy {
+      /** Disallow trailing unmatched content.             */ COMPLETE_MATCH,
+      /** Accept longest match, ignore trailing content.   */ LONGEST_MATCH,
+      /** Accept shortest match, ignore trailing content.  */ SHORTEST_MATCH;
+
+      @Override
+      public String toString() {
+        return EnumOption.string(name());
+      }
+    }
   }
 
 }
