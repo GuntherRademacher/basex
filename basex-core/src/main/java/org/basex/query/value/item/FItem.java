@@ -6,6 +6,7 @@ import java.util.function.*;
 
 import org.basex.data.*;
 import org.basex.query.*;
+import org.basex.query.ann.*;
 import org.basex.query.expr.*;
 import org.basex.query.func.*;
 import org.basex.query.util.collation.*;
@@ -115,6 +116,7 @@ public abstract class FItem extends Item implements XQFunction {
       final SeqType bt = body.seqType();
       tp = cc != null && !bt.eq(dt) && bt.instanceOf(dt) ? FuncType.get(bt, argTypes) : ft;
       body.markTailCalls(null);
+      if(annotations().contains(Annotation.METHOD)) ((FuncItem) this).inheritFocus = true;
       return new FuncItem(info, body, vars, annotations(), tp, vs.stackSize(), funcName());
     } finally {
       if(cc != null) cc.removeScope();

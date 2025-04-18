@@ -46,6 +46,13 @@ public final class FuncItem extends FItem implements Scope {
   private final QueryFocus focus;
   /** Indicates if the query focus is accessed or modified. */
   private final boolean simple;
+  /** Whether the query focus is inherited from the call. */
+  public boolean inheritFocus;
+
+  @Override
+  public boolean has(final Flag... flags) {
+    return inheritFocus && Flag.CTX.oneOf(flags);
+  }
 
   /**
    * Constructor.
@@ -71,6 +78,7 @@ public final class FuncItem extends FItem implements Scope {
   public FuncItem(final FuncItem fi, final AnnList anns, final QueryFocus focus) {
     this(fi.info, fi.expr, fi.params, anns, FuncType.get(anns, ((FuncType) fi.type).declType,
         ((FuncType) fi.type).argTypes), fi.stackSize, fi.name, focus);
+    this.inheritFocus = fi.inheritFocus;
   }
 
   /**
@@ -153,8 +161,8 @@ public final class FuncItem extends FItem implements Scope {
     final int arity = arity();
     for(int a = 0; a < arity; a++) qc.set(params[a], args[a]);
 
-    // use shortcut if focus is not accessed
-    if(simple) return expr.value(qc);
+    // use shortcut if focus is not accessed or inherited
+    if(simple || inheritFocus) return expr.value(qc);
 
     // reset context and evaluate function
     final QueryFocus qf = qc.focus;
