@@ -401,7 +401,7 @@ public final class Functions {
    * @return arguments
    * @throws QueryException query exception
    */
-  private static Expr[] prepareArgs(final FuncBuilder fb, final QNm[] names, final int min,
+  static Expr[] prepareArgs(final FuncBuilder fb, final QNm[] names, final int min,
       final int max, final Object function) throws QueryException {
 
     final Expr[] args = fb.keywords != null ? prepareArgs(fb, names, function) : fb.args();

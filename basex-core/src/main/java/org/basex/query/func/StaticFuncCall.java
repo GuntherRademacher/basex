@@ -25,7 +25,7 @@ import org.basex.util.hash.*;
  */
 public final class StaticFuncCall extends FuncCall {
   /** Function name. */
-  final QNm name;
+  private QNm name;
   /** Function reference (can be {@code null}). */
   StaticFunc func;
 
@@ -64,6 +64,22 @@ public final class StaticFuncCall extends FuncCall {
     this.name = name;
     this.func = func;
     this.hasImport = hasImport;
+  }
+
+  /**
+   * Returns the function name.
+   * @return function name
+   */
+  public QNm name() {
+    return name;
+  }
+
+  /**
+   * Sets the function name.
+   * @param name function name
+   */
+  public void setName(final QNm name) {
+    this.name = name;
   }
 
   @Override

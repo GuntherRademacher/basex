@@ -278,7 +278,7 @@ public class QueryParser extends InputParser {
    */
   private void check(final MainModule main) throws QueryException {
     // check function calls and variable references
-    qc.functions.check(qc);
+    qc.functions.check(qc, sc.funcNS);
     qc.vars.check();
 
     if(qc.updating) {
@@ -934,7 +934,7 @@ public class QueryParser extends InputParser {
    */
   private void functionDecl(final AnnList anns) throws QueryException {
     final InputInfo ii = info();
-    final QNm name = eQName(sc.funcNS, FUNCNAME);
+    final QNm name = eQName(null, FUNCNAME);
     if(reserved(name)) throw error(RESERVED_X, name.local());
 
     wsCheck("(");
@@ -2030,7 +2030,7 @@ public class QueryParser extends InputParser {
           if(ex == null) ex = arrayConstructor();
           if(ex == null) ex = functionItem();
           if(ex == null) {
-            name = eQName(sc.funcNS, ARROWSPEC_X);
+            name = eQName(null, ARROWSPEC_X);
             if(reserved(name)) throw error(RESERVED_X, name.local());
           }
         }
@@ -2711,7 +2711,7 @@ public class QueryParser extends InputParser {
     if(!anns.isEmpty()) throw error(NOANN);
 
     // named function reference
-    final QNm name = eQName(sc.funcNS, null);
+    final QNm name = eQName(null, null);
     if(name != null && wsConsumeWs("#")) {
       final Expr num = numericLiteral(Integer.MAX_VALUE, false);
       if(reserved(name)) {
@@ -2938,7 +2938,7 @@ public class QueryParser extends InputParser {
    */
   private Expr functionCall() throws QueryException {
     final int p = pos;
-    final QNm name = eQName(sc.funcNS, null);
+    final QNm name = eQName(null, null);
     if(name != null && !reserved(name)) {
       skipWs();
       if(current('(')) {

@@ -48,7 +48,6 @@ public final class StaticFuncs extends ExprInfo {
       throws QueryException {
 
     final byte[] uri = name.uri();
-    if(uri.length == 0) throw FUNNONS_X.get(info, name.string());
     if(NSGlobal.reserved(uri) || Functions.builtIn(name) != null)
       throw FNRESERVED_X.get(info, name.string());
 
@@ -63,7 +62,7 @@ public final class StaticFuncs extends ExprInfo {
    * @throws QueryException query exception
    */
   void register(final StaticFuncCall call) throws QueryException {
-    cache(call.name.prefixId()).add(call);
+    cache(call.name().prefixId()).add(call);
   }
 
   /**
@@ -77,10 +76,11 @@ public final class StaticFuncs extends ExprInfo {
   /**
    * Checks if all functions have been correctly declared, and initializes all function calls.
    * @param qc query context
+   * @param funcNS default function namespace (can be {@code null})
    * @throws QueryException query exception
    */
-  public void check(final QueryContext qc) throws QueryException {
-    for(final FuncCache cache : caches.values()) cache.init(qc);
+  public void check(final QueryContext qc, final byte[] funcNS) throws QueryException {
+    for(final FuncCache cache : caches.values()) cache.init(qc, funcNS);
   }
 
   /**
@@ -236,12 +236,29 @@ public final class StaticFuncs extends ExprInfo {
     /**
      * Initializes the function calls and closures.
      * @param qc query context
+     * @param funcNS default function namespace (can be {@code null})
      * @throws QueryException query exception
      */
-    void init(final QueryContext qc) throws QueryException {
+    void init(final QueryContext qc, final byte[] funcNS) throws QueryException {
       // assign functions to function calls
       for(final StaticFuncCall call : calls) {
         if(call.func == null && !setFunc(call) && !setJava(call, qc)) {
+          if(call.name().uri().length == 0 || Token.eq(call.name().uri(), funcNS)) {
+            final QNm name = new QNm(call.name().local(), funcNS);
+            // built-in function
+            final FuncDefinition fd = Functions.builtIn(name);
+            if(fd != null) {
+              call.setName(name);
+              final int min = fd.minMax[0], max = fd.minMax[1];
+              final FuncBuilder fb = new FuncBuilder(call.info(), call.exprs, call.keywords);
+              final Expr[] prepared = Functions.prepareArgs(fb, fd.params, min, max, fd);
+              final StandardFunc sf = fd.get(call.info(), prepared);
+              if(sf.hasUPD()) qc.updating();
+              call.setExternal(sf);
+              continue;
+            }
+
+          }
           // function is unknown: raise error
           if(!calls.isEmpty()) {
             final IntList arities = new IntList();
@@ -260,7 +277,7 @@ public final class StaticFuncs extends ExprInfo {
               final byte[] funcModUri = funcMod == null ? Token.EMPTY : funcMod.uri();
               final byte[] callModUri = callMod == null ? Token.EMPTY : callMod.uri();
               if(!Token.eq(funcModUri, callModUri)) {
-                throw INVISIBLEFUNC_X.get(call.info(), call.name);
+                throw INVISIBLEFUNC_X.get(call.info(), call.name());
               }
             }
             if(func.expr == null) throw FUNCNOIMPL_X.get(func.info, func.name.prefixString());
@@ -271,6 +288,7 @@ public final class StaticFuncs extends ExprInfo {
 
       // assign function signatures to function closures
       for(final Closure closure : closures) {
+        closure.setName(((StaticFuncCall) closure.expr).name());
         final int arity = closure.arity();
         for(final StaticFunc func : funcs) {
           if(arity >= func.min && arity <= func.arity()) {
@@ -334,7 +352,7 @@ public final class StaticFuncs extends ExprInfo {
      */
     boolean setJava(final StaticFuncCall call, final QueryContext qc) throws QueryException {
       final JavaCall java = closures.isEmpty() ?
-        JavaCall.get(call.name, call.exprs, qc, call.info()) : null;
+        JavaCall.get(call.name(), call.exprs, qc, call.info()) : null;
       call.setExternal(java);
       return java != null;
     }
@@ -352,7 +370,7 @@ public final class StaticFuncs extends ExprInfo {
      * @return function name
      */
     QNm qname() {
-      return funcs.isEmpty() ? calls.get(0).name : funcs.get(0).name;
+      return funcs.isEmpty() ? calls.get(0).name() : funcs.get(0).name;
     }
   }
 }

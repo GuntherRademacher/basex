@@ -33,7 +33,7 @@ import org.basex.util.hash.*;
  */
 public final class Closure extends Single implements Scope, XQFunctionExpr {
   /** Function name, {@code null} if not specified. */
-  private final QNm name;
+  private QNm name;
   /** Parameters. */
   private final Var[] params;
   /** Value type, {@code null} if not specified. */
@@ -86,6 +86,14 @@ public final class Closure extends Single implements Scope, XQFunctionExpr {
     this.vs = vs;
     this.global = global == null ? Collections.emptyMap() : global;
     this.declType = declType == null || declType.eq(SeqType.ITEM_ZM) ? null : declType;
+    this.name = name;
+  }
+
+  /**
+   * Sets the function name of this closure.
+   * @param name function name (can be {@code null})
+   */
+  public void setName(final QNm name) {
     this.name = name;
   }
 
@@ -318,7 +326,9 @@ public final class Closure extends Single implements Scope, XQFunctionExpr {
     }
 
     final FuncType ft = (FuncType) seqType().type;
-    return new FuncItem(info, checked, params, anns, ft, vs.stackSize(), name);
+    final QueryFocus focus = checked instanceof StandardFunc && checked.has(Flag.CTX)
+        ? qc.focus.copy() : null;
+    return new FuncItem(info, checked, params, anns, ft, vs.stackSize(), name, focus);
   }
 
   @Override
