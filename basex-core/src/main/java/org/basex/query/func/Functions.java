@@ -187,15 +187,17 @@ public final class Functions {
 
     for(int a = 0; a < arity; a++) fb.add(new QNm(ARG + (a + 1), ""), null, qc);
 
-    // Java function
-    final JavaCall java = JavaCall.get(name, fb.args(), qc, info);
-    if(java != null) {
-      final SeqType[] sts = new SeqType[arity];
-      Arrays.fill(sts, SeqType.ITEM_ZM);
-      final SeqType st = FuncType.get(fb.anns, null, sts).seqType();
-      return new FuncLit(info, java, fb.params, fb.anns, st, name, fb.vs);
+    if(runtime) {
+      // Java function
+      final JavaCall java = JavaCall.get(name, fb.args(), qc, info);
+      if(java != null) {
+        final SeqType[] sts = new SeqType[arity];
+        Arrays.fill(sts, SeqType.ITEM_ZM);
+        final SeqType st = FuncType.get(fb.anns, null, sts).seqType();
+        return new FuncLit(info, java, fb.params, fb.anns, st, name, fb.vs);
+      }
+      return null;
     }
-    if(runtime) return null;
 
     // closure
     final StaticFuncCall call = staticCall(name, fb, qc, hasImport);
