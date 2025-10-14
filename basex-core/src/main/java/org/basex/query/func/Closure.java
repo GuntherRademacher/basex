@@ -52,6 +52,8 @@ public final class Closure extends Single implements Scope, XQFunctionExpr {
   private final VarScope vs;
   /** Non-local variable bindings. */
   private final Map<Var, Expr> global;
+  /** Indicates if the context must be passed down. */
+  private boolean passContext;
 
   /**
    * Constructor.
@@ -95,6 +97,13 @@ public final class Closure extends Single implements Scope, XQFunctionExpr {
    */
   public void setName(final QNm name) {
     this.name = name;
+  }
+
+  /**
+   * Marks that the context value must be passed down.
+   */
+  public void setPassContext() {
+    passContext = true;
   }
 
   @Override
@@ -326,9 +335,7 @@ public final class Closure extends Single implements Scope, XQFunctionExpr {
     }
 
     final FuncType ft = (FuncType) seqType().type;
-    final QueryFocus focus = checked instanceof StandardFunc && checked.has(Flag.CTX)
-        ? qc.focus.copy() : null;
-    return new FuncItem(info, checked, params, anns, ft, vs.stackSize(), name, focus);
+    return new FuncItem(info, checked, params, anns, ft, vs.stackSize(), name, passContext);
   }
 
   @Override

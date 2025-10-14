@@ -278,7 +278,7 @@ public class QueryParser extends InputParser {
    */
   private void check(final MainModule main) throws QueryException {
     // check function calls and variable references
-    qc.functions.check(qc, sc.funcNS);
+    qc.functions.check(qc);
     qc.vars.check();
 
     if(qc.updating) {

@@ -45,7 +45,7 @@ public final class FuncItem extends FItem implements Scope {
   /** Query focus. */
   private final QueryFocus focus;
   /** Indicates if the query focus is accessed or modified. */
-  private final boolean simple;
+  private boolean simple;
 
   /**
    * Constructor.
@@ -71,6 +71,23 @@ public final class FuncItem extends FItem implements Scope {
    * @param type function type
    * @param stackSize stack-frame size
    * @param name function name (can be {@code null})
+   * @param simple indicates if the query focus is accessed or modified
+   */
+  public FuncItem(final InputInfo info, final Expr expr, final Var[] params, final AnnList anns,
+      final FuncType type, final int stackSize, final QNm name, final boolean simple) {
+    this(info, expr, params, anns, type, stackSize, name, null);
+    this.simple = simple;
+  }
+
+  /**
+   * Constructor.
+   * @param info input info (can be {@code null})
+   * @param expr function body
+   * @param params parameters
+   * @param anns function annotations
+   * @param type function type
+   * @param stackSize stack-frame size
+   * @param name function name (can be {@code null})
    * @param focus query focus (can be {@code null})
    */
   public FuncItem(final InputInfo info, final Expr expr, final Var[] params, final AnnList anns,
@@ -84,6 +101,14 @@ public final class FuncItem extends FItem implements Scope {
     this.name = name;
     this.focus = focus;
     simple = !expr.has(Flag.CTX);
+  }
+
+  /**
+   * Sets the flag indicating if the query focus is accessed or modified.
+   * @param simple flag value
+   */
+  public void setSimple(final boolean simple) {
+    this.simple = simple;
   }
 
   @Override
@@ -172,6 +197,11 @@ public final class FuncItem extends FItem implements Scope {
   @Override
   public Object toJava() {
     return this;
+  }
+
+  @Override
+  public boolean has(final Flag... flags) {
+    return Flag.CTX.oneOf(flags) && expr.has(Flag.CTX);
   }
 
   @Override
@@ -324,6 +354,16 @@ public final class FuncItem extends FItem implements Scope {
   @Override
   public String description() {
     return FUNCTION + ' ' + ITEM;
+  }
+
+  @Override
+  public boolean inlineable(final InlineContext ic) {
+    return !expr.has(Flag.CTX);
+  }
+
+  @Override
+  public VarUsage count(final Var var) {
+    return VarUsage.sum(var, expr);
   }
 
   @Override

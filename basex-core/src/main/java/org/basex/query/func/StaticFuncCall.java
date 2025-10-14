@@ -32,7 +32,7 @@ public final class StaticFuncCall extends FuncCall {
   /** Keywords (can be {@code null}, will be dropped after parsing). */
   QNmMap<Expr> keywords;
   /** Placeholder for an external call (if not {@code null}, will be returned by the compiler). */
-  ParseExpr external;
+  Expr external;
   /** Indicates whether a module import for the function name's URI was present. */
   final boolean hasImport;
 
@@ -157,7 +157,7 @@ public final class StaticFuncCall extends FuncCall {
    * Assigns an external function call.
    * @param ext external function call
    */
-  public void setExternal(final ParseExpr ext) {
+  public void setExternal(final Expr ext) {
     external = ext;
   }
 

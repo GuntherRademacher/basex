@@ -190,17 +190,17 @@ public abstract class Value extends Expr implements Iterable<Item> {
   public abstract Object toJava() throws QueryException;
 
   @Override
-  public final boolean has(final Flag... flags) {
+  public boolean has(final Flag... flags) {
     return false;
   }
 
   @Override
-  public final boolean inlineable(final InlineContext ic) {
+  public boolean inlineable(final InlineContext ic) {
     return true;
   }
 
   @Override
-  public final VarUsage count(final Var var) {
+  public VarUsage count(final Var var) {
     return VarUsage.NEVER;
   }
 

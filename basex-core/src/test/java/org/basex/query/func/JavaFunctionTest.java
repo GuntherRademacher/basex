@@ -351,4 +351,16 @@ public final class JavaFunctionTest extends SandboxTest {
     query(mod + "n:element()", "<e/>");
     query(mod + "n:attribute()", "a=\"\"");
   }
+
+  /** User defined functions using Java namespace. */
+  @Test
+  public void userFunc() {
+    final String ns = "declare namespace string = 'java.lang.String';";
+    final String f1 = "declare function string:length($x) {42};";
+    final String f2 = "declare function local:main() {string:length#1('abc')};";
+    final String main = "local:main()";
+    query(ns + f1 + f2 + main, 42);
+    query(ns + f2 + f1 + main, 42);
+    query(ns + f2 + main, 3);
+  }
 }

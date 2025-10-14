@@ -1828,6 +1828,8 @@ public final class FnModuleTest extends SandboxTest {
     error(func.args("x.xq", " { 'content': 'declare function local:f() {}; ()' }"),
         MODULE_FOUND_MAIN_X);
     error(func.args("world"), VAREMPTY_X);
+    error(func.args("x", " { 'content': `module namespace x = 'x'; "
+        + "declare function x:f() external;` }") + "?functions?*?*()", FUNCNOIMPL_X);
   }
 
   /** Test method. */
