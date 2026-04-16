@@ -829,6 +829,8 @@ public enum QueryError {
   /** Error code. */
   SERENCODING_X(SESU, 7, "%"),
   /** Error code. */
+  SERNOTPERM_X_X(SERE, 6, "Character not permitted in XML % serialization: #x%;."),
+  /** Error code. */
   SERENC_X_X(SERE, 8, "Character '#x%;' cannot be mapped to '%'."),
   /** Error code. */
   SERSTAND(SEPM, 9, "Invalid combination of omit-xml-declaration and other parameters."),

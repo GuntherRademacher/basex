@@ -125,11 +125,23 @@ public final class XMLToken {
   private XMLToken() { }
 
   /**
-   * Checks if the specified character is a valid XML 1.0 character.
+   * Checks if the specified character is a valid XDM 4.0 character.
+   * Permits all Unicode codepoints except surrogates (U+D800-U+DFFF), U+FFFE and U+FFFF.
+   * Includes U+0000, following the XDM 4.0 extension for permitted characters.
    * @param cp codepoint of the character
    * @return result of check
    */
   public static boolean valid(final int cp) {
+    return cp < 0xD800 ? cp >= 0 :
+      cp >= 0xE000 && cp <= 0xFFFD || cp >= 0x10000 && cp <= 0x10ffff;
+  }
+
+  /**
+   * Checks if the specified character is a valid XML 1.0 character.
+   * @param cp codepoint of the character
+   * @return result of check
+   */
+  public static boolean valid10(final int cp) {
     return cp < 0xD800 ? cp >= 0x20 || cp == 0xA || cp == 0x9 || cp == 0xD :
       cp >= 0xE000 && cp <= 0xFFFD || cp >= 0x10000 && cp <= 0x10ffff;
   }

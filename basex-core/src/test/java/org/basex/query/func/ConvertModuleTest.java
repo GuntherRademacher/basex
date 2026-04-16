@@ -43,9 +43,10 @@ public final class ConvertModuleTest extends SandboxTest {
     query(func.args(" xs:base64Binary(xs:hexBinary('41'))"), "A");
     query(func.args(" xs:hexBinary('41')"), "A");
     query(func.args(" xs:hexBinary('41')", "CP1252"), "A");
-    query(func.args(" xs:hexBinary('12')", "CP1252", true), "\uFFFD");
+    query(func.args(" xs:hexBinary('12')", "CP1252"), "\u0012");
+    query(func.args(" xs:hexBinary('80')", "UTF-8", true), "\uFFFD");
     error(func.args(" xs:hexBinary('41')", "X"), CONVERT_ENCODING_X);
-    error(func.args(" xs:hexBinary('12')", "CP1252", false), CONVERT_STRING_X);
+    error(func.args(" xs:hexBinary('80')", "UTF-8", false), CONVERT_STRING_X);
   }
 
   /** Test method. */

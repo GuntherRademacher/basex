@@ -383,7 +383,7 @@ public final class JsonParser {
         tb.add("\\r");
       } else if(cp == '\t') {
         tb.add("\\t");
-      } else if(XMLToken.valid(cp)) {
+      } else if(XMLToken.valid10(cp)) {
         tb.add(cp);
       } else {
         tb.add("\\u").add(hex(cp, 4));

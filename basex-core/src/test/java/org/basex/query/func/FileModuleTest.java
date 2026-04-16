@@ -422,6 +422,8 @@ public final class FileModuleTest extends SandboxTest {
     error(func.args(PATH1, "UNKNOWN"), FILE_UNKNOWN_ENCODING_X);
     assertEquals(3, query(func.args(PATH1, "CP1252")).length());
     query(_FILE_WRITE_BINARY.args(PATH1, " xs:hexBinary('00')"));
+    query(func.args(PATH1), "\u0000");
+    query(_FILE_WRITE_BINARY.args(PATH1, " xs:hexBinary('80')"));
     error(func.args(PATH1), FILE_IO_ERROR_X);
   }
 

@@ -44,7 +44,7 @@ public final class JsonParserTest {
   }
 
   /**
-   * Tests for paring strings.
+   * Tests for parsing strings.
    * @throws Exception exception
    */
   @Test public void stringTest() throws Exception {
@@ -60,8 +60,8 @@ public final class JsonParserTest {
     parse("\"\n\"", "\"\\n\"", true);
     parse("\"\\uD834\"", "\"\uFFFD\"", false);
     parse("\"\uFFFF\"", "\"\uFFFD\"", false);
-    parse("\"\\b\\f\\t\\r\\n\"", "\"\uFFFD\uFFFD\\t\\r\\n\"", false);
-    parse("\"\\u0000\\u001F\"", "\"\uFFFD\uFFFD\"", false);
+    parse("\"\\b\\f\\t\\r\\n\"", "\"\\b\\f\\t\\r\\n\"", false);
+    parse("\"\\u0000\\u001F\"", "\"\\u0000\\u001F\"", false);
     parse("\"\\uD853\\uFFFF\"", "\"\uFFFD\uFFFD\"", false);
     parse("\"\\uD853a\"", "\"\uFFFDa\"", false);
 

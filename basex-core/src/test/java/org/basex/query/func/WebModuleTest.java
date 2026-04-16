@@ -41,12 +41,11 @@ public final class WebModuleTest extends SandboxTest {
   @Test public void decodeUrl() {
     final Function func = _WEB_DECODE_URL;
     query(func.args("a+-._*"), "a -._*");
-    query("let $s := codepoints-to-string((9, 10, 13, 32 to 55295, 57344 to 65533, 65536)) " +
+    query("let $s := codepoints-to-string((0 to 55295, 57344 to 65533, 65536)) " +
         "return $s = web:decode-url(web:encode-url($s))", true);
 
     query(func.args("%1"), "\uFFFD");
-    query(func.args("%01"), "\uFFFD");
-    query(func.args("%D8%00"), "\uFFFD\uFFFD");
+    query(func.args("%D8%00"), "\uFFFD\u0000");
   }
 
   /** Test method. */

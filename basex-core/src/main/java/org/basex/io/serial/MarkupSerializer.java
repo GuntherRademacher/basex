@@ -40,6 +40,8 @@ abstract class MarkupSerializer extends StandardSerializer {
 
   /** HTML5 flag. */
   final boolean html5;
+  /** XML version 1.1 flag. */
+  private final boolean v11;
   /** URI escape flag. */
   final boolean escape;
   /** Standalone 'omit' flag. */
@@ -74,6 +76,7 @@ abstract class MarkupSerializer extends StandardSerializer {
     html5 = hv.equals(V50) || versions[0].equals(V50) && hv.isEmpty() &&
         (version.isEmpty() || version.equals(V50));
     version = checkVersion(VERSION, version, versions);
+    v11 = version.equals(V11);
     checkVersion(VERSION, hv, V50, V401, V40);
 
     final boolean omitDecl = sopts.yes(OMIT_XML_DECLARATION);
@@ -472,5 +475,17 @@ abstract class MarkupSerializer extends StandardSerializer {
       }
     }
     return list;
+  }
+
+  /**
+   * Verify that the given code point is permitted by the version of XML specified by the
+   * {@code version} serialization option.
+   * @param cp code point
+   * @throws QueryIOException if the code point is not permitted.
+   */
+  protected void verifyXmlCharAllowed(final int cp) throws QueryIOException {
+    if(cp == 0 || !v11 && !valid10(cp)) {
+      throw SERNOTPERM_X_X.getIO(v11 ? V11 : V10, Integer.toHexString(cp));
+    }
   }
 }

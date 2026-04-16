@@ -27,6 +27,12 @@ final class XHTMLSerializer extends XhtmlHtmlSerializer {
   }
 
   @Override
+  protected void print(final int cp) throws IOException {
+    verifyXmlCharAllowed(cp);
+    super.print(cp);
+  }
+
+  @Override
   protected void attribute(final byte[] name, final byte[] value, final boolean standalone)
       throws IOException {
 

@@ -462,8 +462,10 @@ public final class FnModuleTest extends SandboxTest {
     query(func.args("AMP"), "&");
     query(func.args("amp"), "&");
     query(func.args("Tab"), "\t");
+    query(func.args(1), "\u0001");
+    query(func.args(0), "\u0000");
 
-    error(func.args(1), CHARINV_X);
+    error(func.args(55296), CHARINV_X);
     error(func.args(11111111111111L), CHARINV_X);
     error(func.args("\\x"), CHARINV_X);
     error(func.args(""), CHARINV_X);
@@ -765,11 +767,12 @@ public final class FnModuleTest extends SandboxTest {
     query(func.args("%F0%9F%92%41"), "\uFFFDA");
     query(func.args("%F0%F0%9F%92%A1"), "\uFFFD\uD83D\uDCA1");
 
-    query(func.args("%00"), "\uFFFD");
-    query(func.args("%01"), "\uFFFD");
+    query(func.args("%00"), "\u0000");
+    query(func.args("%01"), "\u0001");
     query(func.args("%09"), "\t");
     query(func.args("%22"), "\"");
     query(func.args("%25"), "%");
+    query(func.args("%80"), "\uFFFD");
 
     query(func.args("%F0"), "\uFFFD");
     query(func.args("%F0%F0"), "\uFFFD\uFFFD");
@@ -2685,10 +2688,11 @@ return
   /** Test method. */
   @Test public void parseJson() {
     final Function func = PARSE_JSON;
-    query(func.args("\"x\\u0000\""), "x\uFFFD");
-    query(func.args("\"a\\bb\\uD801\\uDC02c\\uD803d\\uDC04e\\uD805\\uD806\"",
+    query(func.args("\"x\\u0000\""), "x\u0000");
+    query(func.args("\"x\\uD800\""), "x\uFFFD");
+    query(func.args("\"a\\uD800b\\uD801\\uDC02c\\uD803d\\uDC04e\\uD805\\uD806\"",
         " { 'fallback': fn($s) { '[' || $s || ']' } }"),
-        "a[\\b]b\uD801\uDC02c[\\uD803]d[\\uDC04]e[\\uD805][\\uD806]");
+        "a[\\uD800]b\uD801\uDC02c[\\uD803]d[\\uDC04]e[\\uD805][\\uD806]");
     query("try {" + func.args("nvll") + "} catch * { $err:description }",
         "(1:1): Unexpected JSON value: 'nvll'.");
   }

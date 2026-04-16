@@ -111,6 +111,7 @@ public final class BinModuleTest extends SandboxTest {
     query(func.args(hex("40EFBBBF4142"), "iso-8859-1", 4), "AB");
     query(func.args(hex("40EFBBBF4142"), "iso-8859-1", 5), "B");
     query(func.args(hex("40EFBBBF4142"), "iso-8859-1", 6), "");
+    query(func.args(_BIN_HEX.args("03")),                  "\u0003");
 
     // errors
     error(func.args(hex(""), "UTF-8", -1),    BIN_IOOR_X_X);
@@ -119,7 +120,7 @@ public final class BinModuleTest extends SandboxTest {
     error(func.args(hex(""), "UTF-8", 0, 1),  BIN_IOOR_X_X);
     error(func.args(hex(""), "X"),            BIN_UE_X);
     error(func.args(hex("FF"), "UTF-8"),      BIN_CE_X);
-    error(func.args(_BIN_HEX.args("03")),     BIN_CE_X);
+    error(func.args(_BIN_HEX.args("80")),     BIN_CE_X);
   }
 
   /** Test method. */

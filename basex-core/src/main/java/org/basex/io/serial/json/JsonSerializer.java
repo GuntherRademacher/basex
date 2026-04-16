@@ -271,7 +271,13 @@ public abstract class JsonSerializer extends StandardSerializer {
           out.print('\\');
           break;
         default:
-          out.print(cp, fallback);
+          if(cp >= 0x20) {
+            out.print(cp, fallback);
+          } else {
+            out.print('\\');
+            out.print('u');
+            out.print(hex(cp, 4));
+          }
           break;
       }
     } else {

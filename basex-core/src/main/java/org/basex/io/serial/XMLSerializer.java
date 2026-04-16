@@ -22,6 +22,12 @@ public final class XMLSerializer extends MarkupSerializer {
   }
 
   @Override
+  protected void print(final int cp) throws IOException {
+    verifyXmlCharAllowed(cp);
+    super.print(cp);
+  }
+
+  @Override
   protected void doctype(final QNm name) throws IOException {
     if(docsys != null) printDoctype(name.local(), docpub, docsys);
   }
