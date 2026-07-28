@@ -18,6 +18,10 @@ public final class HofModuleTest extends SandboxTest {
     query(func.args(" 1 to 10", " function($x, $y) { $x + $y }"), 55);
     query(func.args(" ()", " function($x, $y) { $x + $y }"), "");
 
+    // positional parameter: folded items are numbered from 2
+    query(func.args(" ('A', 'B', 'C')", " fn($r, $c, $p) { `({$r},{$c},{$p})` }"),
+        "((A,B,2),C,3)");
+
     // should not be unrolled
     check(func.args(" 1 to 6", " function($a, $b) { $a + $b }"),
         21,
