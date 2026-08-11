@@ -506,6 +506,10 @@ public class TextPanel extends BaseXPanel {
 
   @Override
   public final void mouseMoved(final MouseEvent e) {
+    if(rend.fold(e.getPoint())) {
+      gui.cursor(CURSORHAND);
+      return;
+    }
     if(linkListener == null) return;
     final TextIterator iter = rend.jump(e.getPoint());
     gui.cursor(iter.link() != null ? CURSORHAND : CURSORARROW);
@@ -563,6 +567,10 @@ public class TextPanel extends BaseXPanel {
     if(SwingUtilities.isLeftMouseButton(e)) {
       clicks = e.getClickCount();
       if(clicks == 1) {
+        if(rend.toggleFold(e.getPoint())) {
+          updateCode.invokeLater();
+          return;
+        }
         // selection mode
         if(shift) editor.startSelection(true);
         select(e.getPoint(), !shift);

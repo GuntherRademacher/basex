@@ -20,6 +20,8 @@ final class TextRenderer extends BaseXBack {
   private final EditorOptions opts;
   /** Offset. */
   private static final int OFFSET = 5;
+  /** Fold marker margin. */
+  private static final int FOLD_MARGIN = 16;
 
   /** Text editor. */
   private final TextEditor text;
@@ -87,6 +89,8 @@ final class TextRenderer extends BaseXBack {
 
   /** Line-offset cache (maps document-space y or text position to a line). */
   private final TextLineCache cache = new TextLineCache();
+  /** Fold ranges. */
+  private final TextFolds folds = new TextFolds();
   /** Cursor position. */
   private final int[] cursor = new int[2];
 
@@ -125,6 +129,7 @@ final class TextRenderer extends BaseXBack {
     // the superclass constructor assigns a font before the options are available
     if(opts == null) return;
     cache.reset();
+    folds.reset();
 
     margin = opts.margin();
     // text that cannot be edited is always wrapped: it has no horizontal scrolling
@@ -151,12 +156,16 @@ final class TextRenderer extends BaseXBack {
     while(more(iter, g) && y < height) {
       if(line != oldL && y >= 0) {
         drawLineNumber(g);
+        drawFoldMarker(iter, g);
         oldL = line;
       }
       write(iter, g);
     }
     if(rowStart()) markLine(iter, g);
-    if(line != oldL) drawLineNumber(g);
+    if(line != oldL) {
+      drawLineNumber(g);
+      drawFoldMarker(iter, g);
+    }
 
     stringWidth = 0;
     final int s = iter.pos();
@@ -215,13 +224,36 @@ final class TextRenderer extends BaseXBack {
   }
 
   /**
+   * Renders a fold marker for the current line.
+   * @param iter text iterator
+   * @param g graphics reference
+   */
+  private void drawFoldMarker(final TextIterator iter, final Graphics g) {
+    if(!folds.visible()) return;
+    final int start = lineStart(iter.pos());
+    if(!folds.starts(start)) return;
+
+    clipAll(g);
+    g.setColor(GUIConstants.gray);
+    final int mx = Math.max(1, sepX() - FOLD_MARGIN + 4);
+    final int my = lineY + (fontHeight >> 1);
+    if(folds.collapsed(start)) {
+      g.fillPolygon(new int[] { mx, mx, mx + 6 }, new int[] { my - 4, my + 4, my }, 3);
+    } else {
+      g.fillPolygon(new int[] { mx - 1, mx + 7, mx + 3 }, new int[] { my - 3, my - 3, my + 4 },
+        3);
+    }
+    clipText(g);
+  }
+
+  /**
    * Draws the line number separator.
    * @param g graphics reference
    */
   private void drawLinesSep(final Graphics g) {
-    if(edit) {
+    if(edit || folds.visible()) {
       final int sx = sepX();
-      if(showLines) {
+      if(showLines || folds.visible()) {
         g.setColor(GUIConstants.lightGray);
         g.drawLine(sx, 0, sx, height);
       }
@@ -336,6 +368,7 @@ final class TextRenderer extends BaseXBack {
     syntax.init(GUIConstants.textColor);
 
     offset = OFFSET;
+    if(folds.visible()) offset += FOLD_MARGIN;
     if(g != null && edit && showLines) {
       offset += font.stringWidth(Integer.toString(text.lines())) + (OFFSET << 1);
     }
@@ -355,6 +388,7 @@ final class TextRenderer extends BaseXBack {
    */
   void computeHeight() {
     width = getWidth() - OFFSET;
+    refreshFolds();
     // text and width unchanged: only refresh the derived height and scroll extent
     if(cache.built(text.text(), cacheWidth())) {
       height = getHeight() + fontHeight;
@@ -674,6 +708,7 @@ final class TextRenderer extends BaseXBack {
     if(ch == TokenBuilder.NLINE || ch == TokenBuilder.HLINE) {
       newline(ch == TokenBuilder.NLINE);
       line++;
+      skipFold(iter);
       return true;
     }
     x += stringWidth;
@@ -731,6 +766,9 @@ final class TextRenderer extends BaseXBack {
         // draw newline character
         g.setColor(GUIConstants.gray);
         font.draw(g, "\u00b6", x, y);
+      } else if(cp == TokenBuilder.NLINE && folds.collapsed(lineStart(pos))) {
+        g.setColor(GUIConstants.gray);
+        font.draw(g, " ...", x, y);
       } else if(showInvisible && cp == '\t') {
         // draw tab arrow
         final int lh = 1 + fontHeight / 12, xe = x + font.charWidth('\t') - lh;
@@ -840,6 +878,28 @@ final class TextRenderer extends BaseXBack {
     scan(iter, g, pos.x, pos.y - fontHeight / 5);
     iter.link(link);
     return iter;
+  }
+
+  /**
+   * Toggles a fold at the specified mouse position.
+   * @param pos mouse position
+   * @return {@code true} if a fold was toggled
+   */
+  boolean toggleFold(final Point pos) {
+    final int start = foldStart(pos);
+    if(start == -1 || !folds.toggle(start)) return false;
+    cache.reset();
+    repaint();
+    return true;
+  }
+
+  /**
+   * Checks if a fold marker is located at the specified mouse position.
+   * @param pos mouse position
+   * @return result of check
+   */
+  boolean fold(final Point pos) {
+    return foldStart(pos) != -1;
   }
 
   /**
@@ -957,6 +1017,23 @@ final class TextRenderer extends BaseXBack {
   }
 
   /**
+   * Returns the fold start at the specified mouse position.
+   * @param pos mouse position
+   * @return fold start, or {@code -1}
+   */
+  private int foldStart(final Point pos) {
+    if(!folds.visible() || pos.x > sepX() + 1) return -1;
+    final Graphics g = getGraphics();
+    if(g == null) return -1;
+    final TextIterator iter = init(g, true);
+    final int yPos = pos.y + scroll.pos();
+    if(cache.valid(text.size(), cacheWidth())) position(iter, cache.indexByY(yPos), 0);
+    scan(iter, g, 0, yPos);
+    final int start = lineStart(iter.pos());
+    return folds.starts(start) ? start : -1;
+  }
+
+  /**
    * Indicates if the last scan stopped at the end of a rendered row.
    * @return result of check
    */
@@ -994,7 +1071,10 @@ final class TextRenderer extends BaseXBack {
    * @param s syntax highlighter
    */
   void syntax(final Syntax s) {
-    if(syntax != s) cache.reset();
+    if(syntax != s) {
+      cache.reset();
+      folds.reset();
+    }
     syntax = s;
   }
 
@@ -1004,5 +1084,42 @@ final class TextRenderer extends BaseXBack {
    */
   Syntax syntax() {
     return syntax;
+  }
+
+  /**
+   * Refreshes fold ranges.
+   */
+  private void refreshFolds() {
+    if(folds.refresh(text.text(), !edit && syntax instanceof SyntaxXML)) cache.reset();
+  }
+
+  /**
+   * Skips a collapsed fold after its first line has been rendered.
+   * @param iter text iterator
+   */
+  private void skipFold(final TextIterator iter) {
+    final int hideStart = iter.posEnd(), hideEnd = folds.hideEndAt(hideStart);
+    if(hideEnd <= hideStart) return;
+
+    final byte[] txt = iter.text();
+    for(int p = hideStart; p < hideEnd;) {
+      final int cl = Token.cl(txt, p);
+      syntax.color(txt, p, p + cl);
+      p += cl;
+    }
+    iter.pos(hideEnd);
+    iter.posEnd(hideEnd);
+  }
+
+  /**
+   * Returns the start of the line containing the specified position.
+   * @param pos text position
+   * @return line start
+   */
+  private int lineStart(final int pos) {
+    final byte[] txt = text.text();
+    int start = Math.min(pos, txt.length);
+    while(start > 0 && txt[start - 1] != '\n') start--;
+    return start;
   }
 }
